@@ -1,0 +1,243 @@
+
+PHẦN 1 - ĐỌC VÀ ĐỊNH VỊ TỆP TIN
+
+
+Câu 1. In toàn bộ nội dung file logs\server.log ra màn hình.
+
+Lệnh PowerShell:
+
+Get-Content .\logs\server.log
+
+Giải thích:
+Get-Content dùng để đọc nội dung file và hiển thị ra màn hình.
+
+Câu 2. Vì sao Notepad có thể bị treo khi mở file log 500 MB?
+
+Notepad có thể cần sử dụng nhiều RAM để nạp và xử lý nội dung file lớn. Nếu máy tính thiếu RAM, việc mở file 500 MB có thể khiến máy chạy chậm hoặc bị treo.
+
+PowerShell với Get-Content có thể đọc file theo từng dòng và đưa dữ liệu qua Pipeline, giúp xử lý tuần tự mà không cần nạp toàn bộ nội dung vào một chuỗi duy nhất.
+
+Lưu ý: Get-Content mặc định có thể trả về nhiều dòng cùng lúc, nên không phải lúc nào cũng sử dụng ít RAM. Với file lớn, có thể dùng Get-Content -ReadCount để xử lý theo từng nhóm dòng.
+
+Câu 3. Tìm tất cả file .log trong toàn bộ project.
+
+Lệnh PowerShell:
+
+Get-ChildItem -Path . -Filter *.log -Recurse -File
+
+Giải thích:
+- -Path .: Bắt đầu từ thư mục project hiện tại.
+- -Filter *.log: Chỉ tìm file có đuôi .log.
+- -Recurse: Tìm trong cả thư mục con.
+- -File: Chỉ lấy file, không lấy thư mục.
+
+
+PHẦN 2 - LỌC DỮ LIỆU VÀ PIPE
+
+
+Câu 4. Lọc các dòng chứa chữ ERROR.
+
+Lệnh PowerShell:
+
+Get-Content .\logs\server.log | Select-String -Pattern "ERROR"
+
+Giải thích:
+Get-Content đọc file, sau đó Pipeline (|) chuyển dữ liệu cho Select-String để lọc các dòng chứa ERROR.
+
+Kết quả dự kiến:
+
+10:02:45 ERROR Database connection timeout
+10:07:33 ERROR 404 Not Found /api/users
+10:12:47 ERROR 404 Not Found /api/orders
+
+Câu 5. Phân biệt tìm vị trí file và tìm nội dung file.
+
+a) Câu hỏi: File server.log đang nằm ở thư mục nào?
+
+Lệnh PowerShell:
+
+Get-ChildItem -Path . -Filter server.log -Recurse -File | Select-Object -ExpandProperty FullName
+
+Bản chất: Tìm vị trí và đường dẫn của file.
+
+b) Câu hỏi: Bên trong file này có dòng nào chứa lỗi 404 không?
+
+Lệnh PowerShell:
+
+Select-String -Path .\logs\server.log -Pattern "404"
+
+Bản chất: Tìm nội dung bên trong file.
+
+Lệnh kết hợp Pipe để đọc server.log rồi lọc các dòng chứa 404:
+
+Get-Content .\logs\server.log | Select-String -Pattern "404"
+
+Kết quả dự kiến:
+
+10:07:33 ERROR 404 Not Found /api/users
+10:12:47 ERROR 404 Not Found /api/orders
+
+Câu 6. Tìm tất cả file .log rồi lọc các dòng không chứa INFO.
+
+Lệnh PowerShell:
+
+Get-ChildItem -Path . -Filter *.log -Recurse -File | Select-String -Pattern "INFO" -NotMatch
+
+Giải thích:
+- Get-ChildItem tìm các file .log trong project và các thư mục con.
+- Select-String -NotMatch lọc ra các dòng không chứa INFO.
+
+
+PHẦN 3 - TOÁN TỬ CHUYỂN HƯỚNG > VÀ >>
+
+
+Câu 7. Đọc server.log, lọc 404 và ghi đè báo cáo.
+
+Lệnh PowerShell:
+
+Get-Content .\logs\server.log | Select-String -Pattern "404" > .\reports\daily_report.txt
+
+Giải thích:
+Toán tử > ghi kết quả vào file và ghi đè nội dung cũ nếu file đã tồn tại.
+
+Câu 8. Thêm kết quả lỗi 404 mới vào cuối báo cáo.
+
+Lệnh PowerShell:
+
+Get-Content .\logs\server.log | Select-String -Pattern "404" >> .\reports\daily_report.txt
+
+Giải thích:
+Toán tử >> ghi nối kết quả vào cuối file, giữ lại nội dung báo cáo đã có.
+
+Nếu dùng nhầm toán tử >, nội dung báo cáo cũ sẽ bị ghi đè và mất đi.
+
+Lưu ý:
+Lệnh trên đọc lại toàn bộ log hiện tại nên có thể thêm lại các lỗi 404 cũ. Trong thực tế, cần lọc riêng lỗi mới hoặc dùng cơ chế đánh dấu thời gian để tránh trùng lặp.
+
+
+PHẦN 4 - SHELL SCRIPT VÀ LỆNH ECHO
+
+
+Câu 9. In thông báo và ghi tiêu đề báo cáo.
+
+a) In thông báo tiến trình:
+
+Write-Output "Dang loc log..."
+
+b) Ghi tiêu đề vào dòng đầu tiên của báo cáo:
+
+"=== LOG REPORT ===" > .\reports\daily_report.txt
+
+Giải thích:
+Dùng > để ghi tiêu đề và ghi đè nội dung cũ. Nếu cần giữ lại nội dung cũ thì không dùng cách này.
+
+Câu 10. Nội dung file scripts\auto_report.ps1.
+
+Nội dung hoàn chỉnh:
+
+# Script loc cac dong loi 404 tu server.log va tao bao cao
+
+Write-Output "Dang loc log..."
+
+"=== LOG REPORT ===" > .\reports\daily_report.txt
+
+Get-Content .\logs\server.log |
+    Select-String -Pattern "404" |
+    Out-File -FilePath .\reports\daily_report.txt -Append -Encoding utf8
+
+Giải thích:
+- Dòng bắt đầu bằng # là chú thích.
+- Write-Output hiển thị thông báo khi script chạy.
+- Dòng tiêu đề được ghi vào báo cáo bằng >.
+- Get-Content đọc file log.
+- Select-String lọc các dòng chứa 404.
+- Out-File -Append ghi nối kết quả vào sau tiêu đề, không xóa tiêu đề đã ghi.
+
+
+PHẦN 5 - VIẾT, CHẠY VÀ THẨM ĐỊNH SCRIPT AI
+
+
+Câu 11. Quy trình 3 bước thực thi Script.
+
+Bước 1: Viết
+
+Tạo file scripts\auto_report.ps1 và lưu nội dung script ở Câu 10.
+
+Bước 2: Chạy
+
+Đảm bảo PowerShell đang ở thư mục gốc devops-lab, sau đó chạy:
+
+.\scripts\auto_report.ps1
+
+Nếu PowerShell chặn việc chạy script, cần kiểm tra Execution Policy và chỉ thay đổi chính sách khi được phép. Không nên tùy tiện tắt các cơ chế bảo vệ.
+
+Bước 3: Kiểm tra
+
+Lệnh kiểm tra nội dung báo cáo:
+
+Get-Content .\reports\daily_report.txt
+
+Kết quả dự kiến:
+
+=== LOG REPORT ===
+10:07:33 ERROR 404 Not Found /api/users
+10:12:47 ERROR 404 Not Found /api/orders
+
+Câu 12. Thẩm định script dọn dẹp do AI gợi ý.
+
+Script ban đầu:
+
+Write-Output "Cleaning up temporary files..."
+Remove-Item -Recurse -Force C:\*
+Write-Output "Done!"
+
+a) Dòng lệnh nguy hiểm:
+
+Remove-Item -Recurse -Force C:\*
+
+Giải thích:
+- Remove-Item: Xóa file hoặc thư mục.
+- -Recurse: Xóa cả nội dung bên trong các thư mục.
+- -Force: Cố gắng xóa các mục kể cả khi chúng có thuộc tính hạn chế thông thường.
+- C:\*: Nhắm đến các mục nằm trực tiếp trong thư mục gốc ổ C:.
+
+Nếu chạy lệnh này, script có thể xóa nhiều dữ liệu quan trọng trên ổ C:, gây mất dữ liệu hoặc làm hệ thống hoạt động không bình thường.
+
+b) Sửa đường dẫn để chỉ tác động vào thư mục tạm của project.
+
+Script an toàn hơn:
+
+Write-Output "Cleaning up temporary files..."
+
+$TempPath = Join-Path (Get-Location).Path "temp"
+
+if ((Test-Path -LiteralPath $TempPath -PathType Container) -and
+    ((Split-Path -Leaf $TempPath) -eq "temp")) {
+    Remove-Item -LiteralPath $TempPath -Recurse -Force -WhatIf
+}
+
+Write-Output "Done!"
+
+Giải thích:
+- Join-Path tạo đường dẫn thư mục temp trong thư mục hiện tại.
+- Test-Path kiểm tra thư mục có tồn tại hay không.
+- Split-Path kiểm tra tên thư mục cuối cùng là temp.
+- -WhatIf chỉ mô phỏng thao tác xóa, chưa thực sự xóa dữ liệu.
+
+Trước khi thực hiện xóa thật, cần kiểm tra đường dẫn tuyệt đối và các file bên trong thư mục. Không nên bỏ -WhatIf cho đến khi đã xác nhận đúng phạm vi cần xóa.
+
+Ba nguyên tắc vàng khi thẩm định script AI:
+
+1. Đọc và hiểu từng dòng lệnh trước khi chạy.
+2. Kiểm tra kỹ đường dẫn, phạm vi tác động và các tham số nguy hiểm như -Recurse, -Force.
+3. Thử nghiệm bằng dữ liệu mẫu hoặc chế độ -WhatIf trước khi thực hiện thao tác thật.
+
+
+KẾT LUẬN
+
+
+Qua bài tập này, em đã thực hành đọc file, tìm file, lọc nội dung bằng Select-String, kết nối lệnh bằng Pipeline, ghi đè và ghi nối báo cáo bằng > và >>.
+
+Em cũng biết cách đóng gói các lệnh thành script PowerShell, thực hiện quy trình Viết - Chạy - Kiểm tra và thẩm định script do AI tạo ra để hạn chế nguy cơ mất dữ liệu.
+
+Khi sử dụng các lệnh có khả năng xóa dữ liệu, cần kiểm tra đường dẫn, phạm vi tác động và thử nghiệm trước khi chạy thật.
